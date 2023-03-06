@@ -37,20 +37,14 @@ def set_location(devices, lat, lng):
 
         location_simulator = DtSimulateLocation(lockdown=device_lockdown_client)
         location_simulator.set(lat, lng)
+    time.sleep(2.5)
 
 
 while 1 == 1:
     set_location(the_devices, latitude, longitude)
-    time.sleep(5)
     set_location(the_devices, latitude + 0.0001, longitude + 0.0001)
-    time.sleep(5)
     set_location(the_devices, latitude + 0.0002, longitude + 0.0002)
-    time.sleep(5)
     set_location(the_devices, latitude + 0.0003, longitude + 0.0003)
-    time.sleep(5)
     set_location(the_devices, latitude + 0.0002, longitude + 0.0002)
-    time.sleep(5)
     set_location(the_devices, latitude + 0.0001, longitude + 0.0001)
-    time.sleep(5)
-    set_location(the_devices, latitude, longitude)
-    time.sleep(5)
+
