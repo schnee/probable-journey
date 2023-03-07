@@ -40,7 +40,13 @@ def set_location(devices, lat, lng):
     time.sleep(2.5)
 
 
-while 1 == 1:
+start = time.time()
+now = start
+target_dur: float = now + 2 * 60 * 60 # two hours * 60 minutes * 60 seconds
+
+while now < target_dur:
+    now = time.time()
+    print(target_dur - now)
     set_location(the_devices, latitude, longitude)
     set_location(the_devices, latitude + 0.0001, longitude + 0.0001)
     set_location(the_devices, latitude + 0.0002, longitude + 0.0002)
