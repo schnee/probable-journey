@@ -49,7 +49,7 @@ target_dur: float = 2 * 60 * 60  # two hours * 60 minutes * 60 seconds
 elapsed = 0
 
 meters_per_step = 3
-step_direction = Direction.SOUTHEAST # because why not
+step_direction = Direction.NORTHWEST  # because why not
 
 # Walk 'meters_per_step' in the 'step_direction' until target_dur is exceeded. First head one way out
 # and then head the opposite direction back
@@ -58,7 +58,7 @@ while elapsed < target_dur:
     elapsed = current - start
     print(timedelta(seconds=round(elapsed)))
     for i in range(1000):
-        next_point = inverse_haversine((latitude,longitude), meters_per_step * i, step_direction, Unit.METERS)
+        next_point = inverse_haversine((latitude, longitude), meters_per_step * i, step_direction, Unit.METERS)
         set_location(the_devices, next_point[0], next_point[1])
     for i in range(999, 0, -1):
         next_point = inverse_haversine((latitude, longitude), meters_per_step * i, step_direction, Unit.METERS)
