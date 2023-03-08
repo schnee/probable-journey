@@ -1,4 +1,5 @@
 import argparse
+import random
 import time
 
 from pymobiledevice3.lockdown import LockdownClient
@@ -32,8 +33,8 @@ the_devices = list_devices()
 # image_mounter.upload_image('Developer', image, signature)
 # image_mounter.mount('Developer', signature)
 
-# the sleep time is set to 1 second, so that we're moving meters_per_step / second. This might
-# get randomized a bit in the future
+# the sleep time is set to 1 second, so that we're moving meters_per_step / second.
+
 def set_location(devices, lat, lng):
     for device in devices:
         # print(device)
@@ -48,8 +49,10 @@ now = start
 target_dur: float = 2 * 60 * 60  # two hours * 60 minutes * 60 seconds
 elapsed = 0
 
-meters_per_step = 3
+meters_per_step_base = 3
+step_range = meters_per_step_base * 0.1
 step_direction = Direction.NORTHWEST  # because why not
+next_point = (latitude, longitude) # initialize
 
 # Walk 'meters_per_step' in the 'step_direction' until target_dur is exceeded. First head one way out
 # and then head the opposite direction back
@@ -57,12 +60,16 @@ while elapsed < target_dur:
     current = time.time()
     elapsed = current - start
     print(timedelta(seconds=round(elapsed)))
-    for i in range(1000):
-        next_point = inverse_haversine((latitude, longitude), meters_per_step * i, step_direction, Unit.METERS)
-        set_location(the_devices, next_point[0], next_point[1])
+    for i in range(100):
+        current_point = next_point
+        set_location(the_devices, current_point[0], current_point[1])
+        meters_per_step = random.uniform(meters_per_step_base-step_range, meters_per_step_base+step_range)
+        next_point = inverse_haversine(current_point, meters_per_step, step_direction, Unit.METERS)
     current = time.time()
     elapsed = current - start
     print(timedelta(seconds=round(elapsed)))
-    for i in range(999, 0, -1):
-        next_point = inverse_haversine((latitude, longitude), meters_per_step * i, step_direction, Unit.METERS)
-        set_location(the_devices, next_point[0], next_point[1])
+    for i in range(100):
+        current_point = next_point
+        set_location(the_devices, current_point[0], current_point[1])
+        meters_per_step = random.uniform(meters_per_step_base - step_range, meters_per_step_base + step_range)
+        next_point = inverse_haversine(current_point, meters_per_step, Direction.SOUTHEAST, Unit.METERS)
