@@ -60,6 +60,9 @@ while elapsed < target_dur:
     for i in range(1000):
         next_point = inverse_haversine((latitude, longitude), meters_per_step * i, step_direction, Unit.METERS)
         set_location(the_devices, next_point[0], next_point[1])
+    current = time.time()
+    elapsed = current - start
+    print(timedelta(seconds=round(elapsed)))
     for i in range(999, 0, -1):
         next_point = inverse_haversine((latitude, longitude), meters_per_step * i, step_direction, Unit.METERS)
         set_location(the_devices, next_point[0], next_point[1])
