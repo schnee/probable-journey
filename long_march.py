@@ -1,5 +1,6 @@
 import argparse
 import random
+import math
 import time
 
 from pymobiledevice3.lockdown import LockdownClient
@@ -51,7 +52,6 @@ elapsed = 0
 
 meters_per_step_base = 3
 step_range = meters_per_step_base * 0.1
-step_direction = Direction.NORTHWEST  # because why not
 next_point = (latitude, longitude) # initialize
 
 # Walk 'meters_per_step' in the 'step_direction' until target_dur is exceeded. First head one way out
@@ -60,6 +60,7 @@ while elapsed < target_dur:
     current = time.time()
     elapsed = current - start
     print(timedelta(seconds=round(elapsed)))
+    step_direction = math.radians(random.uniform(0, 360))  # because why not
     for i in range(100):
         current_point = next_point
         set_location(the_devices, current_point[0], current_point[1])
@@ -72,4 +73,4 @@ while elapsed < target_dur:
         current_point = next_point
         set_location(the_devices, current_point[0], current_point[1])
         meters_per_step = random.uniform(meters_per_step_base - step_range, meters_per_step_base + step_range)
-        next_point = inverse_haversine(current_point, meters_per_step, Direction.SOUTHEAST, Unit.METERS)
+        next_point = inverse_haversine(current_point, meters_per_step, step_direction - math.pi, Unit.METERS)
