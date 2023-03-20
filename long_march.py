@@ -50,7 +50,7 @@ now = start
 target_dur: float = 2 * 60 * 60  # two * 60 minutes/hour * 60 seconds/minute
 elapsed = 0
 
-meters_per_step_base = 3
+meters_per_step_base = 3.1
 step_range = meters_per_step_base * 0.1
 next_point = (latitude, longitude) # initialize
 start_point = next_point
@@ -64,7 +64,7 @@ set_location(the_devices, latitude, longitude)
 while elapsed < target_dur:
     current = time.time()
     elapsed = current - start
-    print(timedelta(seconds=round(elapsed)), total_distance, total_distance/elapsed)
+    print(timedelta(seconds=round(elapsed)), round(total_distance,2), round(total_distance/elapsed,2))
     step_direction = math.radians(random.uniform(0, 360))  # because why not
     start_point = next_point
     for i in range(100):
@@ -77,7 +77,7 @@ while elapsed < target_dur:
         next_point = inverse_haversine(current_point, meters_per_step, step_direction, Unit.METERS)
     current = time.time()
     elapsed = current - start
-    print(timedelta(seconds=round(elapsed)), total_distance, total_distance/elapsed)
+    print(timedelta(seconds=round(elapsed)), round(total_distance, 2), round(total_distance / elapsed, 2))
     for i in range(100):
         prior_point = current_point
         current_point = next_point
