@@ -1,4 +1,5 @@
 import argparse
+import concurrent.futures
 import random
 import math
 import time
@@ -8,6 +9,7 @@ from pymobiledevice3.services.simulate_location import DtSimulateLocation
 from pymobiledevice3.usbmux import list_devices
 from datetime import timedelta
 from haversine import inverse_haversine, haversine, Unit
+from itertools import repeat
 
 # Parse command line arguments
 parser = argparse.ArgumentParser(description='Accept two comma-separated numbers')
@@ -37,27 +39,31 @@ the_devices = list_devices()
 # the sleep time is set to 1 second, so that we're moving meters_per_step / second.
 
 def set_location(devices, lat, lng):
-    for device in devices:
-        # print(device)
-        device_lockdown_client = LockdownClient(device.serial)
-        location_simulator = DtSimulateLocation(lockdown=device_lockdown_client)
-        location_simulator.set(lat, lng)
-    time.sleep(0.0)
+    with concurrent.futures.ThreadPoolExecutor(max_workers=5) as e:
+        e.map(set_loc, devices, repeat(lat), repeat(lng))
+    #time.sleep(0.45)
 
+
+def set_loc(device, lat, lng):
+    device_lockdown_client = LockdownClient(device.serial)
+    location_simulator = DtSimulateLocation(lockdown=device_lockdown_client)
+    location_simulator.set(lat, lng)
+
+
+set_location(the_devices, latitude, longitude)
 
 start = time.time()
 now = start
 target_dur: float = 2 * 60 * 60  # two * 60 minutes/hour * 60 seconds/minute
 elapsed = 0
 
-meters_per_step_base = 3.1
+meters_per_step_base = 3.0
 step_range = meters_per_step_base * 0.1
 next_point = (latitude, longitude) # initialize
 start_point = next_point
 current_point = start_point
 total_distance = 0
 
-set_location(the_devices, latitude, longitude)
 
 # Walk 'meters_per_step' in the 'step_direction' until target_dur is exceeded. First head one way out
 # and then head the opposite direction back
@@ -68,6 +74,7 @@ while elapsed < target_dur:
     step_direction = math.radians(random.uniform(0, 360))  # because why not
     start_point = next_point
     for i in range(100):
+        loop_start = time.time()
         prior_point = current_point
         current_point = next_point
         set_location(the_devices, current_point[0], current_point[1])
@@ -75,10 +82,14 @@ while elapsed < target_dur:
         total_distance += distance
         meters_per_step = random.uniform(meters_per_step_base-step_range, meters_per_step_base+step_range)
         next_point = inverse_haversine(current_point, meters_per_step, step_direction, Unit.METERS)
+        loop_elapsed = time.time() - loop_start
+        if loop_elapsed < 1:
+            time.sleep(1 - loop_elapsed)
     current = time.time()
     elapsed = current - start
     print(timedelta(seconds=round(elapsed)), round(total_distance, 2), round(total_distance / elapsed, 2))
     for i in range(100):
+        loop_start = time.time()
         prior_point = current_point
         current_point = next_point
         set_location(the_devices, current_point[0], current_point[1])
@@ -86,3 +97,6 @@ while elapsed < target_dur:
         total_distance += distance
         meters_per_step = random.uniform(meters_per_step_base - step_range, meters_per_step_base + step_range)
         next_point = inverse_haversine(current_point, meters_per_step, step_direction - math.pi, Unit.METERS)
+        loop_elapsed = time.time() - loop_start
+        if loop_elapsed < 1:
+            time.sleep(1 - loop_elapsed)
