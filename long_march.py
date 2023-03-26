@@ -13,6 +13,10 @@ from itertools import repeat
 
 # Parse command line arguments
 parser = argparse.ArgumentParser(description='Accept two comma-separated numbers')
+parser.add_argument('-s', '--secs', metavar='N', default=100, type=int,
+                    help='approx number of seconds to walk out before turning around')
+parser.add_argument('-m','--mps', metavar='M', default=3, type=float,
+                    help='approx meters per second to walk')
 parser.add_argument('nums', metavar='num1,num2', type=str,
                     help='two comma-separated numbers')
 args = parser.parse_args()
@@ -20,8 +24,12 @@ args = parser.parse_args()
 num1_str, num2_str = args.nums.split(",")
 latitude = float(num1_str.strip())
 longitude = float(num2_str.strip())
+seconds_to_walk = args.secs
+meters_per_step_base = args.mps
 
 print(f"lat = {latitude}, lng = {longitude}")
+print(f"secs = {seconds_to_walk}")
+print(f"meters per second = {meters_per_step_base}")
 
 the_devices = list_devices()
 
@@ -57,7 +65,6 @@ now = start
 target_dur: float = 2 * 60 * 60  # two * 60 minutes/hour * 60 seconds/minute
 elapsed = 0
 
-meters_per_step_base = 3.0
 step_range = meters_per_step_base * 0.1
 next_point = (latitude, longitude) # initialize
 start_point = next_point
@@ -73,30 +80,19 @@ while elapsed < target_dur:
     print(timedelta(seconds=round(elapsed)), round(total_distance,2), round(total_distance/elapsed,2))
     step_direction = math.radians(random.uniform(0, 360))  # because why not
     start_point = next_point
-    for i in range(100):
-        loop_start = time.time()
-        prior_point = current_point
-        current_point = next_point
-        set_location(the_devices, current_point[0], current_point[1])
-        distance = haversine(prior_point, current_point, unit=Unit.METERS)
-        total_distance += distance
-        meters_per_step = random.uniform(meters_per_step_base-step_range, meters_per_step_base+step_range)
-        next_point = inverse_haversine(current_point, meters_per_step, step_direction, Unit.METERS)
-        loop_elapsed = time.time() - loop_start
-        if loop_elapsed < 1:
-            time.sleep(1 - loop_elapsed)
-    current = time.time()
-    elapsed = current - start
-    print(timedelta(seconds=round(elapsed)), round(total_distance, 2), round(total_distance / elapsed, 2))
-    for i in range(100):
-        loop_start = time.time()
-        prior_point = current_point
-        current_point = next_point
-        set_location(the_devices, current_point[0], current_point[1])
-        distance = haversine(prior_point, current_point, unit=Unit.METERS)
-        total_distance += distance
-        meters_per_step = random.uniform(meters_per_step_base - step_range, meters_per_step_base + step_range)
-        next_point = inverse_haversine(current_point, meters_per_step, step_direction - math.pi, Unit.METERS)
-        loop_elapsed = time.time() - loop_start
-        if loop_elapsed < 1:
-            time.sleep(1 - loop_elapsed)
+    for direction in (step_direction, step_direction - math.pi):
+        for i in range(seconds_to_walk):
+            loop_start = time.time()
+            prior_point = current_point
+            current_point = next_point
+            set_location(the_devices, current_point[0], current_point[1])
+            distance = haversine(prior_point, current_point, unit=Unit.METERS)
+            total_distance += distance
+            meters_per_step = random.uniform(meters_per_step_base-step_range, meters_per_step_base+step_range)
+            next_point = inverse_haversine(current_point, meters_per_step, direction, Unit.METERS)
+            loop_elapsed = time.time() - loop_start
+            if loop_elapsed < 1:
+                time.sleep(1 - loop_elapsed)
+        current = time.time()
+        elapsed = current - start
+        print(timedelta(seconds=round(elapsed)), round(total_distance, 2), round(total_distance / elapsed, 2))
