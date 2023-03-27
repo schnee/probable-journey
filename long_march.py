@@ -12,13 +12,13 @@ from haversine import inverse_haversine, haversine, Unit
 from itertools import repeat
 
 # Parse command line arguments
-parser = argparse.ArgumentParser(description='Accept two comma-separated numbers')
+parser = argparse.ArgumentParser(description='Simulate walking for all connected devices')
 parser.add_argument('-s', '--secs', metavar='N', default=100, type=int,
                     help='approx number of seconds to walk out before turning around')
 parser.add_argument('-m','--mps', metavar='M', default=3, type=float,
                     help='approx meters per second to walk')
-parser.add_argument('nums', metavar='num1,num2', type=str,
-                    help='two comma-separated numbers')
+parser.add_argument('nums', metavar='lat,lng (no spaces)', type=str,
+                    help='two comma-separated numbers representing latitude and longitude')
 args = parser.parse_args()
 
 num1_str, num2_str = args.nums.split(",")
@@ -49,7 +49,6 @@ the_devices = list_devices()
 def set_location(devices, lat, lng):
     with concurrent.futures.ThreadPoolExecutor(max_workers=5) as e:
         e.map(set_loc, devices, repeat(lat), repeat(lng))
-    #time.sleep(0.45)
 
 
 def set_loc(device, lat, lng):
@@ -71,13 +70,11 @@ start_point = next_point
 current_point = start_point
 total_distance = 0
 
-
-# Walk 'meters_per_step' in the 'step_direction' until target_dur is exceeded. First head one way out
-# and then head the opposite direction back
+# Walk 'meters_per_step' ( +/- a little delta ) in the 'step_direction' until target_dur is exceeded. First head one
+# way out for 'seconds_to_walk' seconds, and then head the opposite direction back
 while elapsed < target_dur:
     current = time.time()
     elapsed = current - start
-    print(timedelta(seconds=round(elapsed)), round(total_distance,2), round(total_distance/elapsed,2))
     step_direction = math.radians(random.uniform(0, 360))  # because why not
     start_point = next_point
     for direction in (step_direction, step_direction - math.pi):
