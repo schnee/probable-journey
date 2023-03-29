@@ -77,7 +77,7 @@ while elapsed < target_dur:
     elapsed = current - start
     step_direction = math.radians(random.uniform(0, 360))  # because why not
     start_point = next_point
-    for direction in (step_direction, step_direction - math.pi):
+    for direction in (step_direction, step_direction - math.pi, step_direction - math.pi, step_direction):
         for i in range(seconds_to_walk):
             loop_start = time.time()
             prior_point = current_point
