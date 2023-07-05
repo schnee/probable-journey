@@ -59,8 +59,25 @@ def dist_from_last(lat, lng):
     distance = haversine((lat,lng),(last_lat,last_lng)) # kilometers
     return distance
 
-
 def cooldown(dist):
+    with open("cooldown.csv", 'r') as file:
+        # Create a DictReader object
+        csv2dict = csv.DictReader(file)
+
+        # Convert the CSV file into a dictionary
+        dictionary = list(csv2dict)
+    
+    #print(dictionary)
+
+    # using enumerate() + next() to find index of
+    # first element just greater than 0.6
+    res = next(x for x, val in enumerate(dictionary)
+               if float(val['distance']) >= dist)
+
+    return dictionary[res]['cooldown']
+
+
+def old_cooldown(dist):
     cool = 120
     if dist >= 1350:
         cool = 117
@@ -124,7 +141,7 @@ dist = dist_from_last(latitude,longitude)
 print(f"distance from last = {dist}")
 
 cool = cooldown(dist)
-print(f"Cooldown =  {cool}")
+print(f"cooldown =  {cool}")
 
 def update_last_loc(lat,lng):
     with open("last_loc.csv", mode="w", newline='') as csvfile:
