@@ -65,78 +65,20 @@ def cooldown(dist):
         csv2dict = csv.DictReader(file)
 
         # Convert the CSV file into a dictionary
-        dictionary = list(csv2dict)
+        dc_map = list(csv2dict)
     
-    #print(dictionary)
+    #print(dc_map)
+
+    dc_map = sorted(dc_map, key = lambda d: float(d['distance']))
 
     # using enumerate() + next() to find index of
     # first element just greater than 0.6
-    res = next(x for x, val in enumerate(dictionary)
+    res = next(x for x, val in enumerate(dc_map)
                if float(val['distance']) >= dist)
 
-    return dictionary[res]['cooldown']
+    return dc_map[res]['cooldown']
 
-
-def old_cooldown(dist):
-    cool = 120
-    if dist >= 1350:
-        cool = 117
-    elif dist >= 1200:
-        cool = 114
-    elif dist >= 1100:
-        cool = 107
-    elif dist >= 1000:
-        cool = 99
-    elif dist >= 900:
-        cool = 92
-    elif dist >= 800:
-        cool = 84
-    elif dist >=700:
-        cool = 78
-    elif dist >= 565:
-        cool = 69
-    elif dist >= 500:
-        cool = 65
-    elif dist >= 460:
-        cool = 62
-    elif dist >= 375:
-        cool = 54
-    elif dist >= 350:
-        cool = 51
-    elif dist >= 250:
-        cool = 45
-    elif dist >= 220:
-        cool = 40
-    elif dist >= 100:
-        cool = 35
-    elif dist >= 81:
-        cool = 25
-    elif dist >= 76:
-        cool = 25
-    elif dist >= 65:
-        cool = 22
-    elif dist >= 42:
-        cool = 19
-    elif dist >= 26:
-        cool = 15
-    elif dist >= 18:
-        cool = 10
-    elif dist >= 12:
-        cool = 8
-    elif dist >= 10:
-        cool = 7
-    elif dist >= 9:
-        cool =7
-    elif dist >= 7:
-        cool = 5
-    elif dist >= 5:
-        cool = 2
-    else:
-        cool =1
-    return cool
-
-
-dist = dist_from_last(latitude,longitude)
+dist = round(dist_from_last(latitude,longitude),2)
 
 print(f"distance from last = {dist}")
 
