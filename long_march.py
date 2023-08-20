@@ -11,6 +11,18 @@ from pymobiledevice3.usbmux import list_devices
 from datetime import timedelta
 from haversine import inverse_haversine, haversine, Unit
 from itertools import repeat
+from urllib.parse import urlparse
+from urllib.parse import parse_qs
+
+def get_latlng(url):
+    o = urlparse(url)
+    if o.scheme:
+        qdict = parse_qs(o.query)
+        latlng = qdict.get('q')[0]
+    else:
+        latlng = url
+    return latlng
+
 
 # Parse command line arguments
 parser = argparse.ArgumentParser(description='Simulate walking for all connected devices')
@@ -22,7 +34,9 @@ parser.add_argument('nums', metavar='lat,lng (no spaces)', type=str,
                     help='two comma-separated numbers representing latitude and longitude')
 args = parser.parse_args()
 
-num1_str, num2_str = args.nums.split(",")
+latlng = get_latlng(args.nums)
+
+num1_str, num2_str = latlng.split(",")
 latitude = float(num1_str.strip())
 longitude = float(num2_str.strip())
 seconds_to_walk = args.secs
