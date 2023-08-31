@@ -65,7 +65,7 @@ if __name__ == '__main__':
     # ok, now, subset so that we have only those invasions that we can get to
     # before they expire. current_time + cool < expiration...
 
-    df2 = df2[(rtime+df2['cool']) < df2['invasion_end']].sort_values(by='cool')
+    df2 = df2[(rtime+df2['cool']) < df2['invasion_end']].sort_values(by='distance')
 
     df2.apply(lambda row: 
               print(f"{row['lat']},{row['lng']} {row['cool']} {row['name']}"), 
