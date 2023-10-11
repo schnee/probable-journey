@@ -60,6 +60,10 @@ def update_last_loc(lat,lng):
         locwriter.writeheader()
         locwriter.writerow({'lat':lat,'lng':lng})
 
+def set_location_for_all(lat, lng):
+    devices = list_devices()
+    set_location(devices, lat, lng)
+
 def set_location(devices, lat, lng):
     update_last_loc(lat,lng)
     with concurrent.futures.ThreadPoolExecutor(max_workers=5) as e:
