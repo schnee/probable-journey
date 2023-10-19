@@ -1,3 +1,4 @@
+import argparse
 import time
 from textual.widgets import DataTable, Static
 from textual.app import App, ComposeResult
@@ -77,6 +78,8 @@ class Walker():
 
 class JourneyApp(App):
 
+    stopType = None
+
     BINDINGS = [("r", "populate_table", "Refresh the Stops"),
                 ("g", "go_for_a_walk", "Teleport and Walk")]
     
@@ -120,13 +123,13 @@ class JourneyApp(App):
         # Get stops data from API
         self.clear_table()
         # Get list of stops
-        stops = get_stops(12)
+        stops = get_stops(self.stopType)
         # Populate table with stops data
         table = self.query_one(DataTable)
         # I do wish I could do this w/o the lambda
         stops.apply(lambda row: 
               table.add_row(row['row_num'],row['name'],row['lat'],row['lng'],
-                            row['cool'],row['edge_cool'],row['distance'],row['inv end']), axis=1)
+                            row['cool'],row['edge_cool'],row['distance'],row['invasion_end']), axis=1)
 
     def on_mount(self):
         table = self.query_one(DataTable)
@@ -137,16 +140,25 @@ class JourneyApp(App):
         table.show_header = True
         table.padding = (0, 1)
 
-        table.add_column("row_num", width=7)
+        table.add_column("rn", width=3)
         table.add_column("name", width=10)
         table.add_column("lat", width=6)
         table.add_column("lng", width=6)
-        table.add_column("cooldown", width=9)
+        table.add_column("ini cd", width=9)
         table.add_column("edge cd", width=9)
-        table.add_column("distance", width=8)
-        table.add_column("invasion_end", width=9)
+        table.add_column("dist", width=8)
+        table.add_column("inv end", width=9)
         self.action_populate_table()
 
 app = JourneyApp()
 if __name__ == "__main__":
+
+    parser = argparse.ArgumentParser(description = 'Optimal Journey')
+    parser.add_argument('-t', '--type', help='the numeric type of the pokestop')
+    args = parser.parse_args()
+
+    stopType = int(args.type.strip())
+
+    app.stopType = stopType
+
     app.run()
