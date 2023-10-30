@@ -82,6 +82,12 @@ def get_stops(stopType):
 
     df2 = df2[(df2['cool']) < df2['invasion_end']].sort_values(by='distance')
 
+    # Sort by distance
+    df2 = df2.sort_values('distance') 
+
+    # Keep first 20 rows
+    df2 = df2.iloc[:20]
+
     stops = reorder_stops(df2, df_cool)
 
     return stops
