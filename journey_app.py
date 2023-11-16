@@ -79,6 +79,8 @@ class Walker():
 class JourneyApp(App):
 
     stopType = None
+    url = None
+    area = None
 
     BINDINGS = [("r", "populate_table", "Refresh the Stops"),
                 ("g", "go_for_a_walk", "Teleport and Walk")]
@@ -123,7 +125,7 @@ class JourneyApp(App):
         # Get stops data from API
         self.clear_table()
         # Get list of stops
-        stops = get_stops(self.stopType)
+        stops = get_stops(self.stopType, self.url)
         # Populate table with stops data
         table = self.query_one(DataTable)
         # I do wish I could do this w/o the lambda
@@ -155,10 +157,26 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description = 'Optimal Journey')
     parser.add_argument('-t', '--type', help='the numeric type of the pokestop')
+    parser.add_argument('-a', '--area', help="The area you want to explore")
     args = parser.parse_args()
 
     stopType = int(args.type.strip())
 
+    area = args.area.strip()
+       
+   
+
+    # Read in CSV as DataFrame
+    areas_df = pd.read_csv("areas.csv")
+
+    # Lookup url for matching area 
+    url = areas_df.loc[areas_df['area'] == area, 'url'].iloc[0]
+
+    print(f'stop type {stopType} \nurl {url}')
+
+
     app.stopType = stopType
+    app.url = url
+    app.area = area
 
     app.run()

@@ -5,6 +5,7 @@ from haversine import haversine, Unit
 import pandas as pd 
 from textual.app import App
 from stop_analytics import reorder_stops
+import pandas as pd
 
 ###
 #var males = [4, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31, 33, 35, 37, 39];
@@ -23,8 +24,10 @@ from stop_analytics import reorder_stops
 
 
 
-def get_invasions():
-    r = requests.get('https://nycpokemap.com/pokestop.php')
+def get_invasions(url):
+    r = requests.get(url)
+    #r = requests.get('https://londonpogomap.com/pokestop.php')
+    #r = requests.get('https://nycpokemap.com/pokestop.php')
     data = r.json()
     return data
 
@@ -34,7 +37,7 @@ def get_lastloc():
 
 
 
-def get_stops(stopType):
+def get_stops(stopType, url):
     
     df_lastloc = get_lastloc()
     last_lat = df_lastloc.at[0,'lat']
@@ -43,7 +46,7 @@ def get_stops(stopType):
 
     df_cool = utils.get_cooldown()
 
-    data = get_invasions()
+    data = get_invasions(url)
     df = pd.json_normalize(data['invasions'])
 
     df_request_time = pd.json_normalize(data['meta'])
@@ -96,13 +99,24 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description = 'Optimal Journey')
     parser.add_argument('-t', '--type', help='the numeric type of the pokestop')
+    parser.add_argument('-a', '--area', help="The area you want to explore")
     args = parser.parse_args()
 
     stopType = int(args.type.strip())
-       
-    print(f'stop type {stopType}')
 
-    df2 = get_stops(stopType)
+    area = args.area.strip()
+       
+   
+
+    # Read in CSV as DataFrame
+    areas_df = pd.read_csv("areas.csv")
+
+    # Lookup url for matching area 
+    url = areas_df.loc[areas_df['area'] == area, 'url'].iloc[0]
+
+    print(f'stop type {stopType} \nurl {url}')
+
+    df2 = get_stops(stopType,url)
 
     print(df2)
 
