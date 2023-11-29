@@ -133,13 +133,13 @@ class JourneyApp(App):
         worker = get_current_worker()
 
         # want an average speed of 2.08 meters per second. If the distance traveled
-        # is 35 meters, then the time is at the speed should be 35/2.08 = 16.8
+        # is 35 meters, then the time at that speed should be 35/2.08 = 16.8
         # seconds. This would be how long to sleep after moving 35 meters "instaneously"
 
         speed = 2.08 # 2.08 meters per second
 
         radius = 35.0
-        secant = 5 # meters
+        secant = 2.35 # meters
 
         sleep_time = speed / secant # seconds
 
