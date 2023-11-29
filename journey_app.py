@@ -1,9 +1,10 @@
 import argparse
+import random
 import time
 from textual.widgets import DataTable, Static
 from textual.app import App, ComposeResult
 from textual.keys import Keys
-from textual.worker import Worker
+from textual.worker import Worker, get_current_worker
 from textual import work
 from time import monotonic
 from textual.reactive import reactive
@@ -100,22 +101,32 @@ class JourneyApp(App):
         self.log(selected_row)
         return selected_row
 
-    @work(exclusive=True, thread=True)
-    async def action_go_for_a_walk(self):
+    
+    def action_go_for_a_walk(self):
         walker = Walker(self)
+        self.workers.cancel_group(self, "walk")
+        #self.workers.cancel_all()
         row = self.get_row()
         lat = row[2]
         lng = row[3]
         time_display = self.query_one(TimeDisplay)
         time_display.start()
-        set_location_for_all(lat, lng)
-        time.sleep(5.0)
-        next_point = inverse_haversine((lat, lng), 10, 45, Unit.METERS)
-        set_location_for_all(next_point[0], next_point[1])  
-        # walker.set_interval(2.0)
-        # walker.set_initial_lat(lat)
-        # walker.set_initial_lng(lng)
-        # walker.walk()
+        self.walk_somewhere(lat, lng) 
+
+    @work(exclusive=True, thread=True, group="walk")
+    def walk_somewhere(self, lat, lng):
+        worker = get_current_worker()
+        if not worker.is_cancelled:
+            set_location_for_all(lat, lng)
+        while(not worker.is_cancelled):
+            time.sleep(5.0)
+            next_point = inverse_haversine((lat, lng), 30, random.uniform(0, 359), Unit.METERS)
+            if not worker.is_cancelled:
+                set_location_for_all(next_point[0], next_point[1]) 
+                time.sleep(5.0)
+            if not worker.is_cancelled:
+                set_location_for_all(lat, lng)
+
 
     def clear_table(self):
         table = self.query_one(DataTable)

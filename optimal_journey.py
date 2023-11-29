@@ -42,7 +42,7 @@ def get_stops(stopType, url):
     df_lastloc = get_lastloc()
     last_lat = df_lastloc.at[0,'lat']
     last_lng = df_lastloc.at[0,'lng']
-    print(last_lat, last_lng)
+    #print(last_lat, last_lng)
 
     df_cool = utils.get_cooldown()
 
@@ -57,11 +57,11 @@ def get_stops(stopType, url):
     # adjust invasion_end to be relative to when the request was made
     df['invasion_end'] = df['invasion_end'] - rtime
 
-    print(df)
+   # print(df)
 
     # filter to just the invasions of interest
     df2 = df[df['character'] == stopType].reset_index(drop=True)
-    print(df2)
+    #print(df2)
 
     # now the main logic. first, calculate the distance to each 
     # invasion from the last location.
