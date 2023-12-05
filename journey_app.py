@@ -131,22 +131,11 @@ class JourneyApp(App):
     @work(exclusive=True, thread=True, group="walk")
     def circle_walk(self, lat, lng):
         worker = get_current_worker()
-
-        # want an average speed of 2.08 meters per second. If the distance traveled
-        # is 35 meters, then the time at that speed should be 35/2.08 = 16.8
-        # seconds. This would be how long to sleep after moving 35 meters "instaneously"
-
-        speed = 2.08 # 2.08 meters per second
-
-        radius = 35.0
-        secant = 2.35 # meters
-
-        sleep_time = speed / secant # seconds
-
-        # the hypothenus is the radius. The opposite side is one-half the
-        # secant. So half the angle is the asin of the ratio of 0.5*secant/radius
-        angle_incr = math.asin((0.5*secant)/radius) * 2.0 # in radians
     
+        # a radius of <= 40 keeps the pokestop of interest in the 
+        # active zone. Keep the radius constant per stop
+        radius = random.uniform(35.0-2.5, 35.0+2.5) # meters
+
         # get to the first point on the circle
         if not worker.is_cancelled:
             set_location_for_all(lat, lng)
@@ -160,6 +149,25 @@ class JourneyApp(App):
         # radius meters from the center (lat, lng). This is accomplished by simply
         # incrementing the angle for the inverse_haversine
         while(not worker.is_cancelled):
+
+            # each chord will be a little random, just because humans are a little random
+
+            # want an average speed of X meters per second. If the distance traveled
+            # is 35 meters, then the time at that speed should be 35/X seconds. 
+            # This would be how long to sleep after moving 35 meters "instaneously"
+            speed = random.uniform(2.25, 2.75) # meters per second
+
+            chord = random.uniform(2.2, 2.5) # meters
+
+            sleep_time = speed / chord # seconds
+
+
+            #radius = random.uniform(35.0-2.5, 35.0+2.5) # meters 
+
+            # the hypothenus is the radius. The opposite side is one-half the
+            # chord. So half the angle is the asin of the ratio of 0.5*chord/radius
+            angle_incr = math.asin((0.5*chord)/radius) * 2.0 # in radians
+
             angle = (angle + angle_incr) 
             next_point = inverse_haversine((lat, lng), radius, angle, Unit.METERS)
             if not worker.is_cancelled:
