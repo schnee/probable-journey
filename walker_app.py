@@ -1,4 +1,5 @@
 import math
+import random
 from textual.widgets import Static,Digits
 from textual.app import App, ComposeResult
 from textual.reactive import reactive
@@ -16,6 +17,19 @@ class Velocity(Digits):
     def right(self):
         self.bearing = (self.bearing + 15.0) % 360
 
+    def faster(self):
+        self.speed += 0.1
+        if self.speed > 2.7:
+            self.speed = 2.7
+
+    def slower(self):
+        self.speed -= 0.1
+        if self.speed < 0.0:
+            self.speed = 0.0
+
+    def stop(self):
+        self.speed = 0.0
+
     def watch_bearing(self, bearing: float) -> None:
         self.update(f"{self.speed:03.2f} : {self.bearing:03.0f}")
 
@@ -29,7 +43,8 @@ class WalkerApp(App):
     BINDINGS = [("s", "turn_left", "left turn"),
                 ("f", "turn_right", "right turn"),
                 ("e", "faster", "faster"),
-                ("d", "slower", "slower")]
+                ("d", "slower", "slower"),
+                ("c", "stop", "stop")]
     
 
     def on_mount(self) -> None:
@@ -48,34 +63,27 @@ class WalkerApp(App):
 
     def action_faster(self):
         vel = self.query_one(Velocity)
-        vel.speed += 0.1
-        if vel.speed > 2.7:
-            vel.speed = 2.7
+        vel.faster()
     
     def action_slower(self):
         vel = self.query_one(Velocity)
-        vel.speed -= 0.1
-        if vel.speed < 0:
-            vel.speed = 0
+        vel.slower()
+
+    def action_stop(self):
+        vel = self.query_one(Velocity)
+        vel.stop()
 
     def move(self) -> None:
         vel = self.query_one(Velocity)
+        offset = 0
         if vel.speed > 0:
+            if vel.speed >= 1.5:
+                offset = random.uniform(-0.125, 0.125)
             df_lastloc = get_lastloc()
             last_lat = df_lastloc.at[0,'lat']
             last_lng = df_lastloc.at[0,'lng']
-            next_point = inverse_haversine((last_lat, last_lng), vel.speed, math.radians(vel.bearing), Unit.METERS)
+            next_point = inverse_haversine((last_lat, last_lng), vel.speed + offset, math.radians(vel.bearing), Unit.METERS)
             set_location_for_all(next_point[0], next_point[1]) 
-
-    def action_forward(self):
-        bd = self.query_one(Velocity)
-        df_lastloc = get_lastloc()
-        last_lat = df_lastloc.at[0,'lat']
-        last_lng = df_lastloc.at[0,'lng']
-        next_point = inverse_haversine((last_lat, last_lng), 5, math.radians(bd.bearing), Unit.METERS)
-
-        set_location_for_all(next_point[0], next_point[1]) 
-   
    
 if __name__ == "__main__":
 
