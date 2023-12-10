@@ -154,8 +154,8 @@ class JourneyApp(App):
         if not worker.is_cancelled:
             set_location_for_all(lat, lng)
             time.sleep(5.0)
-        angle = random.uniform(0, 2*math.pi)
-        next_point = inverse_haversine((lat, lng), radius, angle, Unit.METERS)
+        angle = random.uniform(0, 360)
+        next_point = inverse_haversine((lat, lng), radius, math.radians(angle), Unit.METERS)
         if not worker.is_cancelled:
             set_location_for_all(next_point[0], next_point[1]) 
             time.sleep(5.0)
