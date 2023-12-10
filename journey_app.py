@@ -84,6 +84,19 @@ class JourneyApp(App):
     url = None
     area = None
 
+    CSS = """
+    #left-bottom {
+            align: left bottom;
+        }
+
+    Screen {
+            layout: grid;
+            grid-size: 1 2;
+            grid-rows: 95% 5%;
+        }
+    
+    """
+
     BINDINGS = [("r", "populate_table", "Refresh the Stops"),
                 ("g", "go_for_a_walk", "Teleport and Walk")]
     
@@ -93,7 +106,7 @@ class JourneyApp(App):
 
     def compose(self) -> ComposeResult:
         yield DataTable()
-        yield TimeDisplay()
+        yield TimeDisplay(id="left-bottom")
 
     def get_row(self):
         table = self.query_one(DataTable)
@@ -104,7 +117,8 @@ class JourneyApp(App):
 
     
     def action_go_for_a_walk(self):
-        walker = Walker(self)
+
+        # new stop - cancel all walking
         self.workers.cancel_group(self, "walk")
         #self.workers.cancel_all()
         row = self.get_row()
