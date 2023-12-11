@@ -33,7 +33,7 @@ class Velocity(Digits):
 
 class WalkerApp(App):
 
-    interval_timer = None
+    is_paused = reactive(False)
 
     BINDINGS = [("s", "turn_left", "left turn"),
                 ("f", "turn_right", "right turn"),
@@ -47,15 +47,17 @@ class WalkerApp(App):
 
     def on_mount(self) -> None:
         self.interval_timer = self.set_interval(1, self.move)
+        self.is_paused = False
 
     def compose(self) -> ComposeResult:
         yield Velocity()
 
     def action_toggle_pause(self):
-        if self.interval_timer.pause:
+        if self.is_paused:
             self.interval_timer.resume()
         else:
             self.interval_timer.pause()
+        self.is_paused = not self.is_paused
 
     def action_fine_right(self):
         bd = self.query_one(Velocity)
