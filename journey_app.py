@@ -147,19 +147,19 @@ class JourneyApp(App):
         worker = get_current_worker()
     
         # a radius of <= 40 keeps the pokestop of interest in the 
-        # active zone. Keep the radius constant per stop
+        # active zone. Keep the radius constant per stop per loop
         radius = random.uniform(35.0-2.5, 35.0+2.5) # meters
 
         # get to the first point on the circle
         if not worker.is_cancelled:
             set_location_for_all(lat, lng)
-            time.sleep(5.0)
+            time.sleep(2.0)
         angle = random.uniform(0, 360)
         next_point = inverse_haversine((lat, lng), radius, math.radians(angle), Unit.METERS)
         if not worker.is_cancelled:
             set_location_for_all(next_point[0], next_point[1]) 
-            time.sleep(5.0)
-        # walk the circle, by picking a point secant meters from here, but also
+            time.sleep(2.0)
+        # walk the circle, by picking a point chord meters from here, but also
         # radius meters from the center (lat, lng). This is accomplished by simply
         # incrementing the angle for the inverse_haversine
         while(not worker.is_cancelled):
@@ -180,10 +180,17 @@ class JourneyApp(App):
 
             # the hypothenus is the radius. The opposite side is one-half the
             # chord. So half the angle is the asin of the ratio of 0.5*chord/radius
-            angle_incr = math.asin((0.5*chord)/radius) * 2.0 # in radians
+            angle_incr = math.degrees(math.asin((0.5*chord)/radius) * 2.0) # in degrees
 
-            angle = (angle + angle_incr) 
-            next_point = inverse_haversine((lat, lng), radius, angle, Unit.METERS)
+            angle = (angle + angle_incr)
+
+            # for every circuit, change the radius a little bit. just because
+            if angle > 360:
+                radius = random.uniform(35.0-2.5, 35.0+2.5) # meters
+
+            angle = angle % 360
+
+            next_point = inverse_haversine((lat, lng), radius, math.radians(angle), Unit.METERS)
             if not worker.is_cancelled:
                 set_location_for_all(next_point[0], next_point[1]) 
                 time.sleep(sleep_time)
