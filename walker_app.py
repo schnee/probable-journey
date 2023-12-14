@@ -1,17 +1,19 @@
 import math
 import random
-from textual.widgets import Static,Digits
+from textual.widgets import Static, Digits, Switch
 from textual.app import App, ComposeResult
 from textual.reactive import reactive
+from textual.containers import Horizontal
 from optimal_journey import get_lastloc
 from long_march import set_location_for_all
 from haversine import inverse_haversine, Unit
 
+
 class Velocity(Digits):
     bearing = reactive(0.0)
-    speed = reactive(0.0)  
+    speed = reactive(0.0)
 
-    def turn(self, delta: float): 
+    def turn(self, delta: float):
         self.bearing = (self.bearing + delta) % 360
 
     def accelerate(self, delta: float):
@@ -32,18 +34,50 @@ class Velocity(Digits):
 
 
 class WalkerApp(App):
-
     is_paused = reactive(False)
+    pause_sw = Switch(id="pause_sw")
 
-    BINDINGS = [("s", "turn_left", "left turn"),
-                ("f", "turn_right", "right turn"),
-                ("e", "faster", "faster"),
-                ("d", "slower", "slower"),
-                ("c", "stop", "stop"),
-                ("g", "fine_right", "small right"),
-                ("a", "fine_left", "small_left"),
-                ("z", "toggle_pause", "toggle pause")]
-    
+    CSS = """
+Screen {
+    align: center middle;
+}
+
+.container {
+    height: auto;
+    width: auto;
+}
+
+Switch {
+    height: auto;
+    width: auto;
+}
+
+.label {
+    height: 3;
+    content-align: center middle;
+    width: auto;
+}
+
+#custom-design {
+    background: darkslategrey;
+}
+
+#custom-design > .switch--slider {
+    color: dodgerblue;
+    background: darkslateblue;
+}
+"""
+
+    BINDINGS = [
+        ("s", "turn_left", "left turn"),
+        ("f", "turn_right", "right turn"),
+        ("e", "faster", "faster"),
+        ("d", "slower", "slower"),
+        ("c", "stop", "stop"),
+        ("g", "fine_right", "small right"),
+        ("a", "fine_left", "small_left"),
+        ("z", "toggle_pause", "toggle pause"),
+    ]
 
     def on_mount(self) -> None:
         self.interval_timer = self.set_interval(1, self.move)
@@ -51,6 +85,16 @@ class WalkerApp(App):
 
     def compose(self) -> ComposeResult:
         yield Velocity()
+
+        yield Horizontal(
+            Static("Paused: ", classes="label"), self.pause_sw, classes="container"
+        )
+
+    def action_toggle(self):
+        if self.pause_sw.value:
+            self.interval_timer.resume()
+        else:
+            self.interval_timer.pause()
 
     def action_toggle_pause(self):
         if self.is_paused:
@@ -78,7 +122,7 @@ class WalkerApp(App):
     def action_faster(self):
         vel = self.query_one(Velocity)
         vel.accelerate(0.1)
-    
+
     def action_slower(self):
         vel = self.query_one(Velocity)
         vel.accelerate(-0.1)
@@ -94,12 +138,17 @@ class WalkerApp(App):
             if vel.speed >= 1.5:
                 offset = random.uniform(-0.125, 0.125)
             df_lastloc = get_lastloc()
-            last_lat = df_lastloc.at[0,'lat']
-            last_lng = df_lastloc.at[0,'lng']
-            next_point = inverse_haversine((last_lat, last_lng), vel.speed + offset, math.radians(vel.bearing), Unit.METERS)
-            set_location_for_all(next_point[0], next_point[1]) 
-   
-if __name__ == "__main__":
+            last_lat = df_lastloc.at[0, "lat"]
+            last_lng = df_lastloc.at[0, "lng"]
+            next_point = inverse_haversine(
+                (last_lat, last_lng),
+                vel.speed + offset,
+                math.radians(vel.bearing),
+                Unit.METERS,
+            )
+            set_location_for_all(next_point[0], next_point[1])
 
+
+if __name__ == "__main__":
     app = WalkerApp()
     app.run()
