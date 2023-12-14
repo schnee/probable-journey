@@ -34,8 +34,8 @@ class Velocity(Digits):
 
 
 class WalkerApp(App):
-    is_paused = reactive(False)
-    pause_sw = Switch(id="pause_sw")
+
+    action_sw = Switch(id="action_sw", value=True)
 
     CSS = """
 Screen {
@@ -75,8 +75,7 @@ Switch {
         ("d", "slower", "slower"),
         ("c", "stop", "stop"),
         ("g", "fine_right", "small right"),
-        ("a", "fine_left", "small_left"),
-        ("z", "toggle_pause", "toggle pause"),
+        ("a", "fine_left", "small_left")
     ]
 
     def on_mount(self) -> None:
@@ -87,21 +86,14 @@ Switch {
         yield Velocity()
 
         yield Horizontal(
-            Static("Paused: ", classes="label"), self.pause_sw, classes="container"
+            Static("Active: ", classes="label"), self.action_sw, classes="container"
         )
 
-    def action_toggle(self):
-        if self.pause_sw.value:
+    def on_switch_changed(self, switch: Switch) -> None:
+        if switch.value:
             self.interval_timer.resume()
         else:
             self.interval_timer.pause()
-
-    def action_toggle_pause(self):
-        if self.is_paused:
-            self.interval_timer.resume()
-        else:
-            self.interval_timer.pause()
-        self.is_paused = not self.is_paused
 
     def action_fine_right(self):
         bd = self.query_one(Velocity)
