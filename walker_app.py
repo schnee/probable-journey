@@ -18,10 +18,6 @@ class Velocity(Digits):
 
     def accelerate(self, delta: float):
         self.speed += delta
-        if self.speed > 2.7:
-            self.speed = 2.7
-        elif self.speed < 0.0:
-            self.speed = 0.0
 
     def stop(self):
         self.speed = 0.0
@@ -35,7 +31,7 @@ class Velocity(Digits):
 
 class WalkerApp(App):
 
-    action_sw = Switch(id="action_sw", value=True)
+    #action_sw = Switch(id="action_sw", value=True)
 
     CSS = """
 Screen {
@@ -86,7 +82,8 @@ Switch {
         yield Velocity()
 
         yield Horizontal(
-            Static("Active: ", classes="label"), self.action_sw, classes="container"
+            Static("Active: ", classes="label"), 
+            Switch(id="action-sw", value=True), classes="container"
         )
 
     def on_switch_changed(self, switch: Switch) -> None:
@@ -113,11 +110,15 @@ Switch {
 
     def action_faster(self):
         vel = self.query_one(Velocity)
-        vel.accelerate(0.1)
+        if vel.speed <= 2.7:
+            vel.accelerate(0.1)
 
     def action_slower(self):
         vel = self.query_one(Velocity)
-        vel.accelerate(-0.1)
+        if vel.speed > 0.01:   # TODO should do integer math here
+            vel.accelerate(-0.1)
+        else:
+            vel.stop()
 
     def action_stop(self):
         vel = self.query_one(Velocity)
