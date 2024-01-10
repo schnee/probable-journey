@@ -39,22 +39,23 @@ def build_stop_graph(stops, df_cool):
     return G
 
 
-
 def path_weight(G, path):
-    initial_node = path[0]
-    initial_cooldown = G.nodes[initial_node]['cooldown']
-    # seed the total weight with the initial cooldown; this is the
-    # to the first node in the path, from where the journey will begin.
+    """
+    Calculates the total weight of a path in the graph G.
 
-    total_weight = initial_cooldown
+    Parameters:
+    G (Graph): The graph to calculate the path weight for.
+    path (list): The list of node IDs that make up the path.
 
-    for j in range(len(path)-1):
-        node1 = path[j]
-        node2 = path[j+1]
-        edge_data = G.edges[node1, node2]
-        weight = edge_data['weight']
-        total_weight += weight
+    Returns:
+    total_weight (int): The total weight of the path.
+    """
+
+    total_weight = 0
+    for node1, node2 in zip(path, path[1:]):
+        total_weight += G.nodes[node1]['cooldown'] + G.edges[node1, node2]['weight']
     return total_weight
+
 
 
 def reorder_stops(stops, df_cool):
