@@ -82,14 +82,20 @@ def path_weight(G, path):
         total_weight += G.nodes[node1]['cooldown'] + G.edges[node1, node2]['weight']
     return total_weight
 
+def calculate_all_shortest_paths(stop_graph):
+    """Calculates shortest paths between all pairs of nodes in the graph."""
+    return dict(nx.all_pairs_dijkstra_path(stop_graph, weight='weight'))
 
+def find_path_with_minimum_cost(all_paths, stop_graph):
+    """Finds the path with the minimum total weight from all_paths."""
+    return min(all_paths, key=lambda path: path_weight(stop_graph, path))
 
-def reorder_stops(stops, df_cool):
-    G = build_stop_graph(stops, df_cool)
+def reorder_stops(pokestops, cooldown_by_distance):
+    stop_graph = build_stop_graph(pokestops, cooldown_by_distance)
 
-    paths = dict(nx.all_pairs_dijkstra_path(G, weight='weight'))
+    paths = calculate_all_shortest_paths(stop_graph)
 
-    nodes = list(G.nodes)
+    nodes = list(stop_graph.nodes)
     all_paths = []
 
     for start_node in nodes:
@@ -97,29 +103,29 @@ def reorder_stops(stops, df_cool):
         path = min_path(paths, rotated_nodes)
         all_paths.append(path)
 
-    lightest_path = min(all_paths, key=lambda x: path_weight(G, x))
+    lightest_path = find_path_with_minimum_cost(all_paths, stop_graph)
 
     # lightest_path is list of node ids
 
     stop_order = []
     for node_id in lightest_path:
-      stop_order.append(stops.loc[stops['row_num'] == node_id].index[0])
+      stop_order.append(pokestops.loc[pokestops['row_num'] == node_id].index[0])
 
-    stops = stops.loc[stop_order].reset_index(drop=True)
+    pokestops = pokestops.loc[stop_order].reset_index(drop=True)
 
 # Add empty column to hold edge weights
-    stops['edge_cool'] = stops['cool']  
+    pokestops['edge_cool'] = pokestops['cool']  
 
 # Fill edge weights iterating through stops   
-    for i in range(1, len(stops)):
-      node1 = stops.loc[i-1, 'row_num']
-      node2 = stops.loc[i, 'row_num']
+    for i in range(1, len(pokestops)):
+      node1 = pokestops.loc[i-1, 'row_num']
+      node2 = pokestops.loc[i, 'row_num']
   
-      edge_data = G.edges[node1, node2]
+      edge_data = stop_graph.edges[node1, node2]
       weight = edge_data['weight']
   
-      stops.at[i, 'edge_cool'] = weight
-    return stops
+      pokestops.at[i, 'edge_cool'] = weight
+    return pokestops
 
 if __name__ == "__main__":
 
