@@ -3,7 +3,7 @@ from haversine import haversine, Unit
 import pandas as pd
 import utils
 import itertools
-import optimal_journey as oj
+# import optimal_journey as oj
 
 
 def rotate_list(lst, n):
