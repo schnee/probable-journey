@@ -1,9 +1,9 @@
 import networkx as nx
 from haversine import haversine, Unit
-#import optimal_journey as oj
 import pandas as pd
 import utils
 import itertools
+import optimal_journey as oj
 
 
 def rotate_list(lst, n):
@@ -23,20 +23,46 @@ def min_path(paths, theNodes):
     return path
 
 def build_stop_graph(stops, df_cool):
-    G = nx.Graph()
+    """
+    Build a graph representing the stops and their connections.
 
-    for index, row in stops.iterrows():
-        G.add_node(row['row_num'], name=row['name'], pos=(row['lat'], row['lng']),
-               cooldown = row['cool'])
 
-    for i, row1 in stops.iterrows():
-        for j, row2 in stops.iterrows():
-            if i >= j: 
-                continue # avoid duplicate edges
-            dist = haversine((row1['lat'], row1['lng']), 
-                         (row2['lat'], row2['lng']))
-            G.add_edge(i, j, distance=dist, weight=utils.cooldown(dist,df_cool))
-    return G
+    Parameters:
+        stops (pandas.DataFrame): Dataframe containing stop information
+        df_cool (pandas.DataFrame): Dataframe containing cooldown information
+
+    Returns:
+        G (networkx.Graph): The built graph
+    """
+    G = nx.Graph()  # initialize an empty graph
+
+    # Add nodes with coordinates and cooldown
+    for stop_row in stops.loc[:, ['row_num', 'name', 'lat', 'lng', 'cool']].itertuples(index=True):
+        """
+        Add a node for each stop, with its coordinates and cooldown value
+        """
+        G.add_node(stop_row.row_num, 
+                name=stop_row.name, 
+                pos=(stop_row.lat, stop_row.lng), 
+                cooldown=stop_row.cool)
+
+    # Create a fully-connected graph
+    # Add edges with distances and weights
+    stops_pairs = list(itertools.combinations(stops.index, 2))
+    for pair in stops_pairs:
+        """
+        Create edges between all pairs of stops
+        Calculate the distance between each pair of stops using the haversine formula
+        Calculate the weight of each edge using the cooldown function
+        """
+        row1 = stops.loc[pair[0], ['lat', 'lng']]
+        row2 = stops.loc[pair[1], ['lat', 'lng']]
+        dist = haversine((row1.lat, row1.lng), (row2.lat, row2.lng))
+        G.add_edge(pair[0], pair[1], 
+                distance=dist, 
+                weight=utils.cooldown(dist, df_cool))
+
+    return G  # return the built graph
 
 
 def path_weight(G, path):
@@ -96,7 +122,16 @@ def reorder_stops(stops, df_cool):
     return stops
 
 if __name__ == "__main__":
-    stops = utils.get_stops(12)
+
+       # Read in CSV as DataFrame
+    areas_df = pd.read_csv("areas.csv")
+
+    # Lookup url for matching area 
+    area = "nyc"
+    url = areas_df.loc[areas_df['area'] == area, 'url'].iloc[0]
+
+
+    stops = oj.get_stops(12, url)
 
     df_cool = utils.get_cooldown()
 
