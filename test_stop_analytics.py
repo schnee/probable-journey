@@ -19,7 +19,7 @@ def cooldown_df():
                          'cooldown': [5, 10]})
 
 
-def test_build_stop_graph_single_stop(stops_df, cooldown_df):
+def test_build_stop_graph_single_stop(stops_df : pd.DataFrame, cooldown_df: pd.DataFrame):
 
     print(stops_df.head(1))
 
