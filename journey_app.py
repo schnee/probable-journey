@@ -12,6 +12,7 @@ import pandas as pd
 from optimal_journey import get_stops
 from long_march import set_location_for_all
 from haversine import inverse_haversine, Unit
+from rich.text import Text
 
 
 class TimeDisplay(Static):
@@ -236,8 +237,12 @@ class JourneyApp(App):
                 remaining = expiration - current_time
                 remaining_seconds = round(remaining)
                 log(remaining_seconds)
-                table.update_cell(row_key, "time_remaining", remaining_seconds)
-
+                if remaining_seconds < 0:
+                    table.update_cell(row_key, "time_remaining", 
+                                      Text(str(remaining_seconds), style="italic #FF0000", justify="right"))
+                else:
+                    table.update_cell(row_key, "time_remaining", 
+                                      remaining_seconds)
     def on_mount(self):
         table = self.query_one(DataTable)
 
