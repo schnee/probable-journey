@@ -1,5 +1,5 @@
 import networkx as nx
-from haversine import haversine, Unit
+from haversine import haversine, Unit, haversine_vector
 import pandas as pd
 import utils
 import itertools
@@ -46,18 +46,22 @@ def build_stop_graph(stops, df_cool):
                 pos=(stop_row.lat, stop_row.lng), 
                 cooldown=stop_row.cool)
 
+    # vectorized distances for the win
+
+    coords = stops[["lat", "lng"]]
+
+    dist_matrix = haversine_vector(coords, coords, comb=True)
+    
     # Create a fully-connected graph
     # Add edges with distances and weights
     stops_pairs = list(itertools.combinations(stops.index, 2))
     for pair in stops_pairs:
         """
         Create edges between all pairs of stops
-        Calculate the distance between each pair of stops using the haversine formula
         Calculate the weight of each edge using the cooldown function
         """
-        row1 = stops.loc[pair[0], ['lat', 'lng']]
-        row2 = stops.loc[pair[1], ['lat', 'lng']]
-        dist = haversine((row1.lat, row1.lng), (row2.lat, row2.lng))
+
+        dist = dist_matrix[pair[0], pair[1]]
         G.add_edge(pair[0], pair[1], 
                 distance=dist, 
                 weight=utils.cooldown(dist, df_cool))

@@ -61,6 +61,34 @@ def test_build_stop_graph_two_stops(stops_df, cooldown_df):
     assert pytest.approx(actual_distance) == expected_distance
     assert G.edges[0, 1]["weight"] == 5 * 60
 
+def test_build_stop_graph_n_stops(stops_df, cooldown_df):
+
+    n = len(stops_df) # expected number of nodes
+    e = n * (n - 1) // 2 # expected number of edges
+
+    G = build_stop_graph(stops_df, cooldown_df)
+
+    node_list = list(G.nodes())
+    edge_list = list(G.edges())
+
+    assert len(node_list) == n
+    assert len(edge_list) == e
+    assert G.nodes[0]["name"] == "Stop 1"
+    assert G.nodes[0]["cooldown"] == 10
+    assert G.nodes[1]["name"] == "Stop 2"
+    assert G.nodes[1]["cooldown"] == 20
+
+    # Calculate haversine distance between nodes
+    coords = stops_df[["lat", "lng"]]
+    expected_dist_matrix = haversine_vector(coords, coords, comb=True)
+
+    assert expected_dist_matrix.shape == (n, n)
+
+    for edge in edge_list:
+        node1, node2 = edge
+        expected_distance = expected_dist_matrix[node1, node2]
+        actual_distance = G.edges[node1, node2]["distance"]
+        assert pytest.approx(actual_distance) == expected_distance
 
 def test_vectorized_distance(stops_df):
     coords = stops_df[["lat", "lng"]]
@@ -74,6 +102,6 @@ def test_vectorized_distance(stops_df):
     for pair in stops_pairs:
         row1 = stops_df.loc[pair[0], ["lat", "lng"]]
         row2 = stops_df.loc[pair[1], ["lat", "lng"]]
-        expected_distance = haversine((row1.lat, row1.lng), (row2.lat, row2.lng))
-        actual_distance = dist_matrix[pair[0], pair[1]]
+        actual_distance = haversine((row1.lat, row1.lng), (row2.lat, row2.lng))
+        expected_distance = dist_matrix[pair[0], pair[1]]
         assert pytest.approx(actual_distance) == expected_distance

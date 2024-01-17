@@ -1,7 +1,7 @@
 import argparse
 import requests
 import utils
-from haversine import haversine, Unit
+from haversine import haversine, Unit, haversine_vector
 import pandas as pd 
 from textual.app import App
 from stop_analytics import reorder_stops
@@ -53,18 +53,19 @@ def get_stops(stopType, url):
     #print(df_request_time)
     rtime = df_request_time.iloc[0,0]
 
-
-    # adjust invasion_end to be relative to when the request was made
-    df['invasion_end'] = df['invasion_end'] - rtime
-
-   # print(df)
-
     # filter to just the invasions of interest
     df2 = df[df['character'] == stopType].reset_index(drop=True)
     #print(df2)
 
+    # adjust invasion_end to be relative to when the request was made
+    df2['invasion_end'] = df2['invasion_end']
+
+    # add a column for the time remaining in the stop
+    df2['time_remaining'] = df2['invasion_end'] - rtime
+
     # now the main logic. first, calculate the distance to each 
-    # invasion from the last location.
+    # invasion from the "last" location. This should be from 
+    # where you "are" to each invasion.
 
     df2.loc[:,'distance'] = df2.apply(lambda row : haversine((row['lat'],
                      row['lng']), (last_lat, last_lng)), axis = 1)
@@ -77,8 +78,7 @@ def get_stops(stopType, url):
                                   utils.cooldown(row['distance'], df_cool), 
                                   axis = 1 )
     
-    # Add row number column 
-    df2['row_num'] = df2.reset_index().index
+
 
     # ok, now, subset so that we have only those invasions that we can get to
     # before they expire. current_time + cool < expiration...
@@ -90,6 +90,10 @@ def get_stops(stopType, url):
 
     # Keep first 20 rows
     df2 = df2.iloc[:20]
+
+    # Add row number column 
+    df2['row_num'] = df2.reset_index().index
+    df2  = df2.reset_index(drop=True)
 
     stops = reorder_stops(df2, df_cool)
 

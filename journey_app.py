@@ -5,7 +5,7 @@ import time
 from textual.widgets import DataTable, Static
 from textual.app import App, ComposeResult
 from textual.worker import get_current_worker
-from textual import work
+from textual import work, log
 from time import monotonic
 from textual.reactive import reactive
 import pandas as pd
@@ -218,10 +218,25 @@ class JourneyApp(App):
                 row["cool"],
                 row["edge_cool"],
                 row["distance"],
-                row["invasion_end"],
+                row["time_remaining"],
+                row["invasion_end"]
             ),
             axis=1,
         )
+
+    def refresh_expirations(self) -> None:
+        table = self.query_one(DataTable)
+        rows = table.rows
+        for row_key in rows:
+            log(row_key)
+            expiration = table.get_cell(row_key, "invasion_end")
+            log(expiration)
+            if expiration:  # If there's an expiration time
+                current_time = time.time()
+                remaining = expiration - current_time
+                remaining_seconds = round(remaining)
+                log(remaining_seconds)
+                table.update_cell(row_key, "time_remaining", remaining_seconds)
 
     def on_mount(self):
         table = self.query_one(DataTable)
@@ -236,11 +251,13 @@ class JourneyApp(App):
         table.add_column("name", width=10)
         table.add_column("lat", width=6)
         table.add_column("lng", width=6)
-        table.add_column("ini cd", width=9)
-        table.add_column("edge cd", width=9)
-        table.add_column("dist", width=8)
-        table.add_column("inv end", width=9)
+        table.add_column("ini cd", width=8)
+        table.add_column("edge cd", width=8)
+        table.add_column("dist", width=7)
+        table.add_column("remain", width=8, key="time_remaining")
+        table.add_column("inv end", width=0, key="invasion_end") # hidden column
         self.action_populate_table()
+        self.set_interval(1, self.refresh_expirations, pause=False)
 
 
 app = JourneyApp()
