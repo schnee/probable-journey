@@ -236,10 +236,14 @@ class JourneyApp(App):
                 current_time = time.time()
                 remaining = expiration - current_time
                 remaining_seconds = round(remaining)
+                edge_cool = table.get_cell(row_key, "edge_cool")
                 log(remaining_seconds)
                 if remaining_seconds < 0:
                     table.update_cell(row_key, "time_remaining", 
                                       Text(str(remaining_seconds), style="italic #FF0000", justify="right"))
+                elif current_time + edge_cool > expiration:
+                    table.update_cell(row_key, "time_remaining", 
+                                      Text(str(remaining_seconds), style="italic #FFBF00"))
                 else:
                     table.update_cell(row_key, "time_remaining", 
                                       remaining_seconds)
@@ -257,7 +261,7 @@ class JourneyApp(App):
         table.add_column("lat", width=6)
         table.add_column("lng", width=6)
         table.add_column("ini cd", width=8)
-        table.add_column("edge cd", width=8)
+        table.add_column("edge cd", width=8, key="edge_cool")
         table.add_column("dist", width=7)
         table.add_column("remain", width=8, key="time_remaining")
         table.add_column("inv end", width=0, key="invasion_end") # hidden column
