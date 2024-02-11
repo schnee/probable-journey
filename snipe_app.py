@@ -19,17 +19,17 @@ from rich.text import Text
 def paste_data():
     return pyperclip.paste()
     
-def parse_mons(mons):
+def parse_monster_lines(monsters_str):
     """
     Mons should be a string of lines, separated by newlines. Walk throught these lines
     """
-    mons_list = mons.split("\n")
+    monster_list = monsters_str.split("\n")
 
     # Remove empty lines
-    mons_list = [mon for mon in mons_list if mon]
+    monster_list = [mon for mon in monster_list if mon]
 
     # remove each line that does not have ":L_:" in it
-    mons_list = [mon for mon in mons_list if ":L_: " in mon]
+    monster_list = [mon for mon in monster_list if ":L_: " in mon]
 
     df = pd.DataFrame()
 
@@ -39,7 +39,7 @@ def parse_mons(mons):
     lngs = []
     cps = []
     minutes = []
-    for line in mons_list:
+    for line in monster_list:
         level = 0
         cp = 0
         lat = 0
@@ -96,12 +96,21 @@ def parse_mons(mons):
                             'lng': lngs})
     return df
 
+def find_new_monsters(new_df, old_df):
+    df3 = pd.merge(new_df, old_df, on=['lat', 'lng', 'level', 'cp'], how='left', indicator=True)
+    new_mons = df3[df3['_merge'] == 'left_only'].drop(columns=['_merge', 'minutes_y'])
 
-class JourneyApp(App):
-    stopType = None
-    url = None
-    area = None
+    new_mons = new_mons.rename(columns={'minutes_x':'minutes'})
+    return new_mons
 
+class SnipeApp(App):
+
+    # keep a dataframe of the mons that had been visited
+    visited = pd.DataFrame(data={'minutes': [],
+                            'level': [], 
+                            'cp': [],
+                            'lat': [], 
+                            'lng': []})
     CSS = """
     #left-bottom {
             align: left bottom;
@@ -137,7 +146,6 @@ class JourneyApp(App):
     def action_go_for_a_walk(self):
         # new stop - cancel all walking
         self.workers.cancel_group(self, "walk")
-        # self.workers.cancel_all()
         row = self.get_row()
         lat = row[3]
         lng = row[4]
@@ -149,7 +157,7 @@ class JourneyApp(App):
 
         # a radius of <= 40 keeps the pokestop of interest in the
         # active zone. Keep the radius constant per stop per loop
-        radius = random.uniform(35.0 - 2.5, 35.0 + 2.5)  # meters
+        radius = random.uniform(42.0 - 2.5, 42.0 + 2.5)  # meters
 
         # get to the first point on the circle
         if not worker.is_cancelled:
@@ -209,7 +217,26 @@ class JourneyApp(App):
         self.clear_table()
         # Get list of stops
         mons_str = paste_data()
-        mons = parse_mons(mons_str)
+        mons = parse_monster_lines(mons_str)
+
+        # determine which of these stops we haven't visited before
+        # we can do this by comparing the lat and lng to the visited stops
+
+        if(len(self.visited) > 0):
+            # if we have visited stops, then we can compare the lat and lng
+            # to the visited stops
+
+            new_mons = find_new_monsters(mons, self.visited)
+
+            self.visited = pd.concat([self.visited, new_mons]).drop_duplicates(subset=['lat', 'lng', 'level', 'cp'])
+            mons = new_mons
+        else:
+            self.visited = mons
+
+
+        # Sort the mons by expiration time
+        mons = mons.sort_values(by=['minutes'])
+
         # Populate table with stops data
         table = self.query_one(DataTable)
         # I do wish I could do this w/o the lambda
@@ -240,7 +267,7 @@ class JourneyApp(App):
         table.add_column("lng", width=10)
         #self.action_populate_table()
 
-app = JourneyApp()
+app = SnipeApp()
 if __name__ == "__main__":
 
     app.run()
