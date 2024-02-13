@@ -38,13 +38,16 @@ def parse_monster_lines(monsters_str):
     lats = []
     lngs = []
     cps = []
-    minutes = []
+    seconds = []
+    mon_types = []
+
     for line in monster_list:
         level = 0
         cp = 0
         lat = 0
         lng = 0
-        minute = 0
+        second = 0
+        mon_type = ""
         add_it = True
 
         match = re.search(r':L_: (\d+)', line)
@@ -75,21 +78,30 @@ def parse_monster_lines(monsters_str):
         # Also extract minutes 
         match = re.search(r'\(:dsp: in (\d+) minutes\)', line)
         if match:
-            minute = int(match.group(1))
+            second = int(match.group(1)) * 60
             
+        else:
+            add_it = False
+
+        # also extract monster type
+        match = re.search(r':(\w+): :(\w+):( :\w+:)? \(:dsp:', line)
+        if match:
+            mon_type = match.group(1)
         else:
             add_it = False
 
         # if all the REs matched, then add this row to the list
         if add_it:
-            minutes.append(minute)
+            seconds.append(second)
             lats.append(lat)
             lngs.append(lng)
             cps.append(cp)
             levels.append(level)
+            mon_types.append(mon_type)
 
 
-    df = pd.DataFrame(data={'minutes': minutes,
+    df = pd.DataFrame(data={'type': mon_types,
+                            'seconds': seconds,
                             'level': levels, 
                             'cp': cps,
                             'lat': lats, 
@@ -98,15 +110,16 @@ def parse_monster_lines(monsters_str):
 
 def find_new_monsters(new_df, old_df):
     df3 = pd.merge(new_df, old_df, on=['lat', 'lng', 'level', 'cp'], how='left', indicator=True)
-    new_mons = df3[df3['_merge'] == 'left_only'].drop(columns=['_merge', 'minutes_y'])
+    new_mons = df3[df3['_merge'] == 'left_only'].drop(columns=['_merge', 'seconds_y', 'type_y'])
 
-    new_mons = new_mons.rename(columns={'minutes_x':'minutes'})
+    new_mons = new_mons.rename(columns={'seconds_x':'seconds'})
+    new_mons = new_mons.rename(columns={'type_x': 'type'})
     return new_mons
 
 class SnipeApp(App):
 
     # keep a dataframe of the mons that had been visited
-    visited = pd.DataFrame(data={'minutes': [],
+    visited = pd.DataFrame(data={'seconds': [],
                             'level': [], 
                             'cp': [],
                             'lat': [], 
@@ -139,6 +152,8 @@ class SnipeApp(App):
     def get_row(self):
         table = self.query_one(DataTable)
         row = table.cursor_row
+        log("************************")
+        log(row)
         selected_row = table.get_row_at(row)
         self.log(selected_row)
         return selected_row
@@ -146,6 +161,7 @@ class SnipeApp(App):
     def action_go_for_a_walk(self):
         # new stop - cancel all walking
         self.workers.cancel_group(self, "walk")
+        table = self.query_one(DataTable)
         row = self.get_row()
         lat = row[3]
         lng = row[4]
@@ -235,18 +251,22 @@ class SnipeApp(App):
 
 
         # Sort the mons by expiration time
-        mons = mons.sort_values(by=['minutes'])
+        mons = mons.sort_values(by=['seconds'])
 
         # Populate table with stops data
         table = self.query_one(DataTable)
         # I do wish I could do this w/o the lambda
         mons.apply(
             lambda row: table.add_row(
-                row["cp"],
-                row["level"],
-                row["minutes"],
+                Text(text=row["type"]),
+                int(row["cp"]),
+                int(row["level"]),
+                Text(text=str(int(row["seconds"])), justify="right"),
                 row["lat"],
-                row["lng"]
+                row["lng"],
+                row["seconds"], # hidden column for seconds
+                row["lat"],     # hidden column for lat
+                row["lng"]      # hidden column for lng
             ),
             axis=1,
         )
@@ -259,12 +279,16 @@ class SnipeApp(App):
         table.header_divider = "solid"
         table.show_header = True
         table.padding = (0, 1)
-
+        table.add_column("type", width=10)
         table.add_column("cp", width=5)
         table.add_column("level", width=5)
-        table.add_column("minutes", width =5)
-        table.add_column("lat", width=10)
-        table.add_column("lng", width=10)
+        table.add_column(Text("seconds", justify='right'), width = 10)
+        table.add_column("lat", width=7)
+        table.add_column("lng", width=7),
+        # a few hidden columns so that I can directly access the raw values
+        table.add_column("seconds_raw", width=0, key="seconds_raw"),
+        table.add_column("lat_raw", width=0, key="lat_raw"),
+        table.add_column("lng_raw", width=0, key="lng_raw")
         #self.action_populate_table()
 
 app = SnipeApp()
