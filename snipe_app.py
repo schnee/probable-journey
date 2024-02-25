@@ -38,6 +38,7 @@ def parse_monster_lines(monsters_str):
     lats = []
     lngs = []
     cps = []
+    ivs = []
     seconds = []
     mon_types = []
 
@@ -46,6 +47,7 @@ def parse_monster_lines(monsters_str):
         cp = 0
         lat = 0
         lng = 0
+        iv = 0
         second = 0
         mon_type = ""
         add_it = True
@@ -73,6 +75,16 @@ def parse_monster_lines(monsters_str):
 
         else:
             add_it = False
+
+        # Extract IV
+        pattern = r':I_: (\d+\.\d+) \('
+
+        match = re.search(pattern, line)
+
+        if match:
+            iv = float(match.group(1))
+        else:
+            add_it = False
             
 
         # Also extract minutes 
@@ -98,18 +110,20 @@ def parse_monster_lines(monsters_str):
             cps.append(cp)
             levels.append(level)
             mon_types.append(mon_type)
+            ivs.append(iv)
 
 
     df = pd.DataFrame(data={'type': mon_types,
                             'seconds': seconds,
                             'level': levels, 
                             'cp': cps,
+                            'iv': ivs,
                             'lat': lats, 
                             'lng': lngs})
     return df
 
 def find_new_monsters(new_df, old_df):
-    df3 = pd.merge(new_df, old_df, on=['lat', 'lng', 'level', 'cp'], how='left', indicator=True)
+    df3 = pd.merge(new_df, old_df, on=['lat', 'lng', 'level', 'cp', 'iv'], how='left', indicator=True)
     new_mons = df3[df3['_merge'] == 'left_only'].drop(columns=['_merge', 'seconds_y', 'type_y'])
 
     new_mons = new_mons.rename(columns={'seconds_x':'seconds'})
@@ -121,6 +135,7 @@ class SnipeApp(App):
     # keep a dataframe of the mons that had been visited
     visited = pd.DataFrame(data={'seconds': [],
                             'level': [], 
+                            'iv': [],
                             'cp': [],
                             'lat': [], 
                             'lng': []})
@@ -163,8 +178,8 @@ class SnipeApp(App):
         self.workers.cancel_group(self, "walk")
         table = self.query_one(DataTable)
         row = self.get_row()
-        lat = row[3]
-        lng = row[4]
+        lat = row[4]
+        lng = row[5]
         self.circle_walk(lat, lng)
 
     @work(exclusive=True, thread=True, group="walk")
@@ -255,10 +270,11 @@ class SnipeApp(App):
 
         # Populate table with stops data
         table = self.query_one(DataTable)
-        # I do wish I could do this w/o the lambda
+        # I do wish  I could do this w/o the lambda
         mons.apply(
             lambda row: table.add_row(
                 Text(text=row["type"]),
+                float(row["iv"]),
                 int(row["cp"]),
                 int(row["level"]),
                 Text(text=str(int(row["seconds"])), justify="right"),
@@ -280,6 +296,7 @@ class SnipeApp(App):
         table.show_header = True
         table.padding = (0, 1)
         table.add_column("type", width=10)
+        table.add_column("iv", width=5)
         table.add_column("cp", width=5)
         table.add_column("level", width=5)
         table.add_column(Text("seconds", justify='right'), width = 10)
